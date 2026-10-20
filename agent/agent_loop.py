@@ -5,6 +5,7 @@ from pathlib import Path
 from ollama import AsyncClient
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from mcp_manager import MCPManager
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -33,14 +34,15 @@ class MCPAgent:
             {
                 "role": "system",
                 "content": (
-                    "You are mean but helpful AI assistant."
-                    "Use available tools when needed. "
-                    "Do not invent tool results."
+                    "You are a mean but helpful AI development assistant. "
+                    "Use MCP tools to inspect the local project. "
+                    "Never invent Git information."
                     "Add old school joke in the end of every result"
                 )
             }
         ]
 
+    if False: ''' Commented it out because of desicions is to be made by mcp_manager
     async def initialize(self):
         """Discover available MCP tools."""
 
@@ -60,7 +62,7 @@ class MCPAgent:
 
         for tool in self.tools:
             print(f"  - {tool['function']['name']}")
-
+    '''
     async def chat(self, user_message: str):
         """Process user input through the agent loop."""
 
@@ -100,7 +102,7 @@ class MCPAgent:
                 try:
                     result = await self.session.call_tool(
                         name,
-                        arguments=arguments
+                        arguments
                     )
 
                     content = "\n".join(
@@ -131,50 +133,61 @@ class MCPAgent:
 
 async def main():
 
-    if not SERVER_JAR.exists():
-        raise FileNotFoundError(
-            f"Build the MCP server first: {SERVER_JAR}"
+    manager = MCPManager()
+
+    try:
+        await manager.connect(
+            name="system",
+            command="java",
+            args=[
+                "-jar",
+                str(
+                    PROJECT_ROOT
+                    / "mcp-servers/system-server/target/"
+                    "system-server-0.0.1-SNAPSHOT.jar"
+                )
+            ]
         )
 
-    server_params = StdioServerParameters(
-        command="java",
-        args=["-jar", str(SERVER_JAR)]
-    )
-
-    async with stdio_client(server_params) as (read, write):
-
-        async with ClientSession(read, write) as session:
-
-            await session.initialize()
-
-            agent = MCPAgent(session)
-
-            await agent.initialize()
-
-            print("\nMCP Agent started!")
-            print("Type 'exit' to quit.\n")
-
-            while True:
-
-                user_input = await asyncio.to_thread(
-                    input,
-                    "You: "
+        await manager.connect(
+            name="git",
+            command="java",
+            args=[
+                "-jar",
+                str(
+                    PROJECT_ROOT
+                    / "mcp-servers/git-server/target/"
+                    "git-server-0.0.1-SNAPSHOT.jar"
                 )
+            ],
+            cwd=str(PROJECT_ROOT)
+        )
 
-                if user_input.lower() in ("exit", "quit"):
-                    break
+        agent = MCPAgent(manager)
 
-                if not user_input.strip():
-                    continue
+        print("\nAvailable tools:")
+        for tool in manager.get_tools():
+            print("-", tool["function"]["name"])
 
-                try:
-                    answer = await agent.chat(user_input)
+        while True:
 
-                    print(f"\nAssistant: {answer}\n")
+            user_input = await asyncio.to_thread(
+                input,
+                "\nYou: "
+            )
 
-                except Exception as e:
-                    print(f"\nError: {e}\n")
+            if user_input.lower() in ("exit", "quit"):
+                break
 
+            if not user_input.strip():
+                continue
+
+            answer = await agent.chat(user_input)
+
+            print(f"\nAssistant: {answer}")
+
+    finally:
+        await manager.close()
 
 if __name__ == "__main__":
     asyncio.run(main())

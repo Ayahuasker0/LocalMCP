@@ -22,3 +22,27 @@ Then
 cd ../..
 python agent/agent_loop.py
 ```
+<li></li>
+<li></li>
+<li></li>
+
+Important: Repository location
+For this first implementation, JGit opens the repository at the Java process's working directory:
+```
+System.getProperty("user.dir")
+```
+That means the Git MCP server must be launched with the repository root as its working directory.
+
+We'll explicitly configure this in the Python client.
+
+Later, we'll improve the design by using a configurable repository path.
+
+<li></li>
+<li></li>
+<li></li>
+
+Build the Git MCP server
+```
+cd mcp-servers/git-server
+mvn clean package
+```
