@@ -8,9 +8,19 @@ curl -fsSL https://ollama.com/install.sh | sh
 ollama pull qwen3:8b
 ollama run qwen3:8b
 ```
-You need to build Spring Boot MCP server 
+You need to build Spring Boot MCP servers
 ```
 cd mcp-servers/system-server
+mvn clean package
+```
+```
+cd mcp-servers/git-server
+
+mvn clean package
+```
+```
+cd mcp-servers/project-server
+
 mvn clean package
 ```
 And install python requirements
