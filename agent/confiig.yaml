@@ -1,0 +1,19 @@
+
+model:
+  provider: ollama
+  name: qwen3:8b
+  base_url: http://localhost:11434
+
+mcp:
+  servers:
+    system:
+      command: java
+      jar: mcp-servers/system-server/target/system-server-0.0.1-SNAPSHOT.jar
+
+    git:
+      command: java
+      jar: mcp-servers/git-server/target/git-server-0.0.1-SNAPSHOT.jar
+
+    project:
+      command: java
+      jar: mcp-servers/project-server/target/project-server-0.0.1-SNAPSHOT.jar

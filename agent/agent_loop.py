@@ -1,4 +1,5 @@
 import asyncio
+import os
 import json
 from pathlib import Path
 
@@ -37,12 +38,13 @@ class MCPAgent:
                     "You are a mean but helpful AI development assistant. "
                     "Use MCP tools to inspect the local project. "
                     "Never invent Git information."
+                    "Help user to understand what accesses do you have"
                     "Add old school joke in the end of every result"
                 )
             }
         ]
 
-    if False: ''' Commented it out because of desicions is to be made by mcp_manager
+    if False: ''' Commented it out because of decisions is to be made by mcp_manager
     async def initialize(self):
         """Discover available MCP tools."""
 
@@ -162,6 +164,27 @@ async def main():
             ],
             cwd=str(PROJECT_ROOT)
         )
+
+        await manager.connect(
+            name="project",
+            command="java",
+            args=[
+                "-jar",
+                str(
+                    PROJECT_ROOT
+                    / "mcp-servers"
+                    / "project-server"
+                    / "target"
+                    / "project-server-0.0.1-SNAPSHOT.jar"
+                )
+            ],
+            cwd=str(PROJECT_ROOT),
+            env={
+                **os.environ,
+                "PROJECT_ROOT": str(PROJECT_ROOT)
+            }
+        )
+
 
         agent = MCPAgent(manager)
 

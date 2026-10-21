@@ -11,12 +11,20 @@ class MCPManager:
         self.sessions = {}
         self.tools = {}
 
-    async def connect(self, name, command, args, cwd=None):
+    async def connect(
+            self,
+            name,
+            command,
+            args,
+            cwd=None,
+            env=None
+    ):
 
         params = StdioServerParameters(
             command=command,
             args=args,
-            cwd=cwd
+            cwd=cwd,
+            env=env
         )
 
         read, write = await self.exit_stack.enter_async_context(
@@ -47,7 +55,7 @@ class MCPManager:
                     "function": {
                         "name": tool.name,
                         "description": tool.description or "",
-                        "parameters": tool.inputSchema
+                        "parameters": tool.input_schema
                     }
                 }
             }
