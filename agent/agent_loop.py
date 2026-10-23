@@ -26,45 +26,31 @@ MAX_TOOL_ROUNDS = 67
 
 class MCPAgent:
 
-    def __init__(self, session: ClientSession):
-        self.session = session
+    def __init__(self, manager: MCPManager):
+        self.manager = manager
         self.llm = AsyncClient(host="http://localhost:11434")
-        self.tools = []
+
+        # Get all tools discovered from MCP servers
+        self.tools = manager.get_tools()
 
         self.messages = [
             {
                 "role": "system",
                 "content": (
-                    "You are a mean but helpful AI development assistant. "
-                    "Use MCP tools to inspect the local project. "
-                    "Never invent Git information."
-                    "Help user to understand what accesses do you have"
-                    "Add old school joke in the end of every result"
+                    "You are an AI coding assistant with access "
+                    "to local MCP tools. "
+                    "When asked to search code, use search_project_code. "
+                    "When asked about Git, use the Git tools. "
+                    "Never invent tool results."
                 )
             }
         ]
 
-    if False: ''' Commented it out because of decisions is to be made by mcp_manager
-    async def initialize(self):
-        """Discover available MCP tools."""
+        print(
+            "[DEBUG] Agent tools:",
+            [tool["function"]["name"] for tool in self.tools]
+        )
 
-        response = await self.session.list_tools()
-
-        for tool in response.tools:
-            self.tools.append({
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description or "",
-                    "parameters": tool.inputSchema
-                }
-            })
-
-        print("\nAvailable MCP tools:")
-
-        for tool in self.tools:
-            print(f"  - {tool['function']['name']}")
-    '''
     async def chat(self, user_message: str):
         """Process user input through the agent loop."""
 
@@ -75,11 +61,19 @@ class MCPAgent:
 
         for round_number in range(MAX_TOOL_ROUNDS):
 
+            import json
+
+            print("\n[DEBUG] Tools sent to Ollama:")
+            print(json.dumps(self.tools, indent=2))
+
             response = await self.llm.chat(
                 model=MODEL,
                 messages=self.messages,
                 tools=self.tools
             )
+            print("\n[DEBUG] LLM response:")
+            print("Content:", response.message.content)
+            print("Tool calls:", response.message.tool_calls)
 
             self.messages.append(response.message)
 
@@ -102,7 +96,7 @@ class MCPAgent:
                 print(f"Calling {name}({arguments})")
 
                 try:
-                    result = await self.session.call_tool(
+                    result = await self.manager.call_tool(
                         name,
                         arguments
                     )
@@ -113,7 +107,7 @@ class MCPAgent:
                         if item.type == "text"
                     )
 
-                    if result.isError:
+                    if result.is_error:
                         content = f"Tool error: {content}"
 
                 except Exception as e:
