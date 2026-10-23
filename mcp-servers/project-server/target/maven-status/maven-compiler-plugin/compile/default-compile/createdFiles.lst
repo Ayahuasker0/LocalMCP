@@ -1,2 +1,3 @@
-com/example/mcp/tools/GitTools.class
-com/example/mcp/GitServerApplication.class
+com/example/mcp/ProjectServerApplication.class
+com/example/mcp/service/ProjectFileService.class
+com/example/mcp/tools/ProjectTools.class
