@@ -14,6 +14,8 @@ spring:
         version: 1.0.0
         type: SYNC
         stdio: true
+        annotation-scanner:
+          enabled: true
 
 project:
   root: ${PROJECT_ROOT}

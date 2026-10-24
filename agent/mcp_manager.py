@@ -81,5 +81,27 @@ class MCPManager:
             arguments=arguments
         )
 
+    async def list_resources(self, server_name):
+        session = self.sessions[server_name]
+        result = await session.list_resources()
+        return result.resources
+
+    async def read_resource(self, server_name, uri):
+        session = self.sessions[server_name]
+        return await session.read_resource(uri)
+
+    async def list_prompts(self, server_name):
+        session = self.sessions[server_name]
+        result = await session.list_prompts()
+        return result.prompts
+
+    async def get_prompt(self, server_name, name, arguments=None):
+        session = self.sessions[server_name]
+
+        return await session.get_prompt(
+            name,
+            arguments=arguments or {}
+        )
+
     async def close(self):
         await self.exit_stack.aclose()
