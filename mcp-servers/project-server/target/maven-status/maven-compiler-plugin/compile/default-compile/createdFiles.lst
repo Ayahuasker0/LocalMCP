@@ -1,3 +1,5 @@
+com/example/mcp/resources/ProjectResources.class
 com/example/mcp/ProjectServerApplication.class
 com/example/mcp/service/ProjectFileService.class
+com/example/mcp/prompts/ProjectPrompts.class
 com/example/mcp/tools/ProjectTools.class

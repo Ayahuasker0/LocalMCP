@@ -1,3 +1,5 @@
 /home/tarust/PycharmProjects/LocalMCP/mcp-servers/project-server/src/main/java/com/example/mcp/ProjectServerApplication.java
+/home/tarust/PycharmProjects/LocalMCP/mcp-servers/project-server/src/main/java/com/example/mcp/prompts/ProjectPrompts.java
+/home/tarust/PycharmProjects/LocalMCP/mcp-servers/project-server/src/main/java/com/example/mcp/resources/ProjectResources.java
 /home/tarust/PycharmProjects/LocalMCP/mcp-servers/project-server/src/main/java/com/example/mcp/service/ProjectFileService.java
 /home/tarust/PycharmProjects/LocalMCP/mcp-servers/project-server/src/main/java/com/example/mcp/tools/ProjectTools.java
