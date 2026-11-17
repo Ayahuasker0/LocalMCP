@@ -36,21 +36,45 @@ def normalize_request(body: dict) -> dict:
     return body
 
 
+
 def inspect_messages(body: dict) -> None:
-    """Log roles and block types, never message content or credentials."""
+    """Log message structure without exposing prompt contents."""
     messages = body.get("messages", [])
+
+    logger.info("Model: %s", body.get("model"))
+    logger.info("System type: %s", type(body.get("system")).__name__)
+    logger.info("Message count: %s", len(messages) if isinstance(messages, list) else "invalid")
+
     if not isinstance(messages, list):
-        logger.warning("messages is not a list")
         return
-    logger.info("System field type=%s; message count=%d", type(body.get("system")).__name__, len(messages))
+
     for i, msg in enumerate(messages):
         if not isinstance(msg, dict):
-            logger.info("Message %d: invalid item type=%s", i, type(msg).__name__)
+            logger.warning("Message %d: invalid type", i)
             continue
+
         content = msg.get("content")
-        types = ([block.get("type", "unknown") for block in content if isinstance(block, dict)]
-                 if isinstance(content, list) else [type(content).__name__])
-        logger.info("Message %d: role=%s blocks=%s", i, msg.get("role"), types)
+
+        if isinstance(content, str):
+            details = f"text ({len(content)} chars)"
+        elif isinstance(content, list):
+            details = [
+                {
+                    "type": block.get("type"),
+                    "keys": list(block.keys())
+                }
+                for block in content
+                if isinstance(block, dict)
+            ]
+        else:
+            details = str(type(content).__name__)
+
+        logger.info(
+            "Message %d: role=%s content=%s",
+            i,
+            msg.get("role"),
+            details
+        )
 
 
 def normalize_system_messages(body: dict) -> dict:
@@ -103,12 +127,49 @@ async def proxy(request: Request, path: str):
             inspect_messages(body)
             body = normalize_request(body)
             body = normalize_system_messages(body)
+            with open("/tmp/saluki_failed_request.json", "w") as f:
+                json.dump(body, f, ensure_ascii=False, indent=2)
+            if isinstance(body, dict):
+                messages = body.get("messages", [])
+
+                logger.info("=== MESSAGE DIAGNOSTICS ===")
+
+            for i, msg in enumerate(messages):
+                if not isinstance(msg, dict):
+                    continue
+
+                content = msg.get("content")
+
+                logger.info(
+                "Message %d | role=%s | content=%s",
+                i,
+                msg.get("role"),
+                json.dumps(content, ensure_ascii=False)[:1000]
+                    )
+                logger.info("=== END DIAGNOSTICS ===")
             logger.info("AFTER normalization: model=%s effort=%s", body.get("model"), body.get("output_config"))
             inspect_messages(body)
             raw_body = json.dumps(body).encode("utf-8")
 
     headers = {k: v for k, v in request.headers.items() if k.lower() not in HOP_HEADERS}
     client = request.app.state.http
+    if path.lstrip("/") == "v1/messages" and raw_body:
+        try:
+            debug_body = json.loads(raw_body)
+            messages = debug_body.get("messages", [])
+
+            user_messages = [
+                m for m in messages
+                if isinstance(m, dict) and m.get("role") == "user"
+            ]
+
+            logger.info(
+                "Request validation: messages=%d user_messages=%d",
+                len(messages),
+                len(user_messages)
+            )
+        except Exception:
+            logger.exception("Request validation failed")
     upstream_request = client.build_request(
         method=request.method,
         url=f"{OLLAMA_URL}/{path}",
