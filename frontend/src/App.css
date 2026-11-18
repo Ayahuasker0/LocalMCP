@@ -103,6 +103,14 @@
   font-size: 14px;
 }
 
+.chat-error {
+  color: #e11d48;
+  font-size: 14px;
+  background: rgba(225, 29, 72, 0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
 .message {
   display: flex;
   flex-direction: column;

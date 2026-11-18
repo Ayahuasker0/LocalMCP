@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
     await app.state.http.aclose()
 
 
-app = FastAPI(lifespan=lifespan)
+app = llmproxy(lifespan=lifespan)
 
 
 def normalize_request(body: dict) -> dict:

@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import ChatWindow from './components/ChatWindow'
 import ChatInput from './components/ChatInput'
 import AgentStatus from './components/AgentStatus'
+import { sendChat } from './services/api'
 import type { ChatMessage, AgentStatus as Status } from './types/chat'
 import './App.css'
 
@@ -13,8 +14,9 @@ function makeId() {
 export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [status, setStatus] = useState<Status>({ state: 'idle' })
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSend = (input: string) => {
+  const handleSend = async (input: string) => {
     const userMsg: ChatMessage = {
       id: makeId(),
       role: 'user',
@@ -23,19 +25,17 @@ export default function App() {
     }
     setMessages((prev) => [...prev, userMsg])
     setStatus({ state: 'thinking' })
+    setError(null)
 
-    // Placeholder: wire to the backend chat endpoint here.
-    // The agent loop (agent/agent_loop.py) streams tool calls + final answer.
-    setTimeout(() => {
-      const assistantMsg: ChatMessage = {
-        id: makeId(),
-        role: 'assistant',
-        content: 'Hello! I am the local MCP agent. Connect me to the backend to run real tool calls.',
-        createdAt: Date.now(),
-      }
-      setMessages((prev) => [...prev, assistantMsg])
+    try {
+      const { messages: reply } = await sendChat(input)
+      // The response tail starts with the user message we already appended.
+      setMessages((prev) => [...prev, ...reply.slice(1)])
       setStatus({ state: 'idle' })
-    }, 600)
+    } catch (e) {
+      setStatus({ state: 'error' })
+      setError(e instanceof Error ? e.message : String(e))
+    }
   }
 
   return (
@@ -54,6 +54,7 @@ export default function App() {
           ) : (
             <ChatWindow messages={messages} />
           )}
+          {error && <div className="chat-error">{error}</div>}
         </div>
         <ChatInput onSend={handleSend} disabled={status.state !== 'idle'} />
       </main>
